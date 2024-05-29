@@ -1,31 +1,43 @@
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import Card from "./Components/Card";
+import { useId } from "react";
 
 const URL = "https://api.thecatapi.com/v1/images/search";
 
+const fetchCat = async (): Promise<{ url: string }> => {
+  const response = await fetch(URL);
+  const data = await response.json();
+  return data[0];
+};
+
 export default function Cat() {
-  const [cat, setCat] = useState<{ url: string } | null>(null);
+  const id = useId();
+  //const [cat, error, reLoading, reload] = useFetch<{ url: string }>(URL);
+  const query = useQuery({ queryKey: ['cats', id], queryFn: fetchCat });
 
-  useEffect(() => {
-    let valid = true;
+  // C
+  if (query.error) {
+    return (
+      <Card>
+        <div className="text-xl text-red-400">Something wrong happend!</div>
+      </Card>
+    );
+  }
 
-    (async () => {
-      const response = await fetch(URL);
-      const data = await response.json();
+  // D State
+  if (query.isRefetching) {
+    return <Card>Re loading...</Card>;
+  }
 
-      if (valid === true) {
-        setCat(data[0]);
-      }
-    })();
+  // A State
+  if (query.isLoading) {
+    return <Card>Loading...</Card>;
+  }
 
-    return () => {
-      valid = false;
-    }
-  }, []);
-
+  // B State
   return (
     <Card>
-      <img className="w-full" src={cat?.url ?? ""} />
+      <img onClick={() => query.refetch()} className="w-full" src={query.data?.url} />
     </Card>
   );
 }
